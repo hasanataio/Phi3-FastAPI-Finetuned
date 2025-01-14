@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends
 import asyncio
 import json, re
-
+from typing import List
 from unsloth import FastLanguageModel
 from unsloth.chat_templates import get_chat_template
 import torch, os
@@ -9,9 +9,7 @@ from pydantic import BaseModel
 
 from ast import literal_eval
 
-import gc
-
-import uvicorn
+from angle_emb import AnglE
 from uvicorn.config import Config
 import time
 
@@ -22,6 +20,12 @@ semaphore = asyncio.Semaphore(10)  # Adjust this number based on your GPU's capa
 
 class ReviewRequest(BaseModel):
     review: str
+
+class EmbeddingsRequest(BaseModel):
+    aspects:  List[str] 
+
+
+embeddings_model = AnglE.from_pretrained('WhereIsAI/UAE-Large-V1', pooling_strategy='cls').to("cuda")
 
 # Load the model and tokenizer
 model, tokenizer = FastLanguageModel.from_pretrained(
@@ -72,7 +76,7 @@ async def get_result(review):
         # print(len(response))
         # response.to_cpu()
         response=tokenizer.batch_decode(model_response, skip_special_tokens=True)[0]
-        print(response)
+        # print(response)
         torch.cuda.empty_cache()    
         # Generate the output
         # with torch.no_grad():
@@ -102,3 +106,8 @@ async def extract_snippets(request: ReviewRequest):
         results = await get_result(request.review)
     return results
 
+
+@app.post('/extract_embeddings')
+async def extract_snippets(request: EmbeddingsRequest):
+    result=embeddings_model.encode(request.aspects)
+    return {"embeddings":result.tolist()}
