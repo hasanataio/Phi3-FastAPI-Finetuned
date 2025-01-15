@@ -21,8 +21,7 @@ semaphore = asyncio.Semaphore(10)  # Adjust this number based on your GPU's capa
 class ReviewRequest(BaseModel):
     review: str
 
-class EmbeddingsRequest(BaseModel):
-    aspects:  List[str] 
+
 
 
 embeddings_model = AnglE.from_pretrained('WhereIsAI/UAE-Large-V1', pooling_strategy='cls').to("cuda")
@@ -102,12 +101,6 @@ async def get_result(review):
 
 @app.post('/extract_snippets')
 async def extract_snippets(request: ReviewRequest):
-    async with semaphore:  # Control concurrency
-        results = await get_result(request.review)
+    results = await get_result(request.review)
     return results
 
-
-@app.post('/extract_embeddings')
-async def extract_snippets(request: EmbeddingsRequest):
-    result=embeddings_model.encode(request.aspects)
-    return {"embeddings":result.tolist()}
