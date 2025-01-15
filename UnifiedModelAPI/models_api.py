@@ -25,4 +25,4 @@ async def extract_snippets(request: EmbeddingsRequest):
 @app.post('/extract_sentiments')
 async def extract_sentiments(request: SentimentsRequest):
     result=await run_sentiment_analysis(request.snippet,request.aspect)
-    return {"embeddings":result}
+    return {"sentiment":result}
